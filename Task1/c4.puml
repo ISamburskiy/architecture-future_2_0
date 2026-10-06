@@ -1,0 +1,53 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_TOP_DOWN()
+
+Person(User, "Бизнес-пользователь", "Сотрудники доменов (клиники, финтех, ИИ), аналитики")
+Person(Admin, "Администратор", "Управление доступом, настройка витрин")
+
+Container(LegacyDWH, "Legacy DWH", "MS SQL Server 2008", "Хранилище исторических данных, содержит чувствительные данные (карты, истории болезней)")
+Container(ESB, "ESB", "Apache Camel", "Интеграционный слой, высокая нагрузка трансформаций")
+Container(PowerBI, "BI-система", "Power BI", "Кастомизированные отчёты, зависимость от DWH")
+Container(PowerBuilderUI, "Клиентский интерфейс", "PowerBuilder", "Операционный интерфейс клиник, тесно связан с DWH")
+Container(AIServices, "ИИ-сервисы", "Python", "Обработка медицинских данных, требуют оперативных данных")
+Container(FinTechServices, "Финтех-сервисы", "Golang/Java", "Финансовые операции, требуют актуальных данных")
+
+Container(DataIngestion, "Data Ingestion Layer", "Cloud ETL (Databricks/Airflow)", "Выгрузка из источников, очистка, нормализация, без чувствительных данных")
+Container(DomainDataMarts, "Доменные витрины", "Cloud Data Warehouse (Snowflake/BigQuery)", "Изолированные среды по доменам: клиники, финтех, ИИ; содержат агрегированные данные для аналитики")
+Container(SelfServicePortal, "Портал самообслуживания", "BI/Low-code платформа", "Конструирование отчётов, срезы данных, RBAC, без доступа к чувствительным данным")
+Container(SecurityLayer, "Security & Governance", "IAM, Data Masking, Audit", "Контроль доступа, маскирование, соответствие регуляторам")
+Container(CloudStorage, "Объектное хранилище", "S3-compatible", "Хранение сырых данных, снимков, логов")
+
+Rel(User, SelfServicePortal, "Формирует/просматривает отчёты")
+Rel(Admin, SelfServicePortal, "Настраивает права и витрины")
+Rel(SelfServicePortal, DomainDataMarts, "Запрашивает данные по срезам", \$technology="SQL/API")
+Rel(DomainDataMarts, DataIngestion, "Получает данные", \$technology="Cloud Pipelines")
+Rel(DataIngestion, LegacyDWH, "Выгружает агрегированные данные (без чувствительных)", \$technology="ETL")
+Rel(DataIngestion, CloudStorage, "Архивирует сырые данные", \$technology="S3")
+Rel(AIServices, DomainDataMarts, "Получает структурированные данные для моделей", \$technology="API/SQL")
+Rel(FinTechServices, DomainDataMarts, "Синхронизирует финансовые показатели", \$technology="API")
+Rel(ESB, LegacyDWH, "Поддерживает легаси-интеграции", \$technology="JMS/HTTP")
+Rel(PowerBuilderUI, LegacyDWH, "Операционные транзакции", \$technology="JDBC")
+Rel(PowerBI, LegacyDWH, "Формирует кастомизированные отчёты", \$technology="DirectQuery")
+Rel(SecurityLayer, DomainDataMarts, "Контролирует доступ и аудит", \$technology="IAM/Policy Engine")
+Rel(SecurityLayer, SelfServicePortal, "Аутентификация и авторизация", \$technology="OAuth2/SAML")
+
+Boundary("Целевая облачная архитектура (Year 1)", "Cloud Environment") {
+  DataIngestion
+  DomainDataMarts
+  SelfServicePortal
+  SecurityLayer
+  CloudStorage
+}
+
+Boundary("Легаси-контур (временное сохранение)", "On-prem / Legacy") {
+  LegacyDWH
+  ESB
+  PowerBI
+  PowerBuilderUI
+  AIServices
+  FinTechServices
+}
+
+@enduml
