@@ -1,0 +1,10 @@
+cloud_id = ""
+folder_id = ""
+token = ""
+prefix = "prod-iac"
+zone = "ru-central1-a"
+subnet_cidr = "10.0.2.0/24"
+vm_cores = 2
+vm_memory = 2
+disk_size = 10
+ssh_public_key = ""
