@@ -1,0 +1,40 @@
+@startuml 123
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_TOP_DOWN()
+
+Person(User, "Бизнес-пользователь", "Сотрудники доменов (клиники, финтех, ИИ), аналитики")
+Person(Admin, "Администратор", "Управление доступом, настройка витрин")
+
+Container_Boundary(CloudEnv, "Целевая облачная архитектура (Year 1)") {
+  Container(SelfServicePortal, "Портал самообслуживания", "BI/Low-code платформа", "Конструирование отчётов, срезы данных, RBAC, без доступа к чувствительным данным")
+  Container(DomainDataMarts, "Доменные витрины", "Cloud Data Warehouse (Snowflake/BigQuery)", "Изолированные среды по доменам: клиники, финтех, ИИ; агрегированные данные для аналитики")
+  Container(DataIngestion, "Data Ingestion Layer", "Cloud ETL (Databricks/Airflow)", "Выгрузка, очистка, нормализация; фильтрация чувствительных данных")
+  Container(SecurityLayer, "Security & Governance", "IAM, Data Masking, Audit", "Контроль доступа, маскирование, соответствие регуляторам")
+  Container(CloudStorage, "Объектное хранилище", "S3-compatible", "Хранение сырых данных, снимков, логов")
+}
+
+Container_Boundary(LegacyEnv, "Легаси-контур (временное сохранение)") {
+  Container(LegacyDWH, "Legacy DWH", "MS SQL Server 2008", "Хранилище исторических данных, содержит чувствительные данные")
+  Container(ESB, "ESB", "Apache Camel", "Интеграционный слой, высокая нагрузка трансформаций")
+  Container(PowerBI, "BI-система", "Power BI", "Кастомизированные отчёты, зависимость от DWH")
+  Container(PowerBuilderUI, "Клиентский интерфейс", "PowerBuilder", "Операционный интерфейс клиник, тесно связан с DWH")
+  Container(AIServices, "ИИ-сервисы", "Python", "Обработка медицинских данных, требуют оперативных данных")
+  Container(FinTechServices, "Финтех-сервисы", "Golang/Java", "Финансовые операции, требуют актуальных данных")
+}
+
+Rel(User, SelfServicePortal, "Формирует/просматривает отчёты")
+Rel(Admin, SelfServicePortal, "Настраивает права и витрины")
+Rel(SelfServicePortal, DomainDataMarts, "Запрашивает данные по срезам", "SQL/API")
+Rel(DomainDataMarts, DataIngestion, "Получает данные", "Cloud Pipelines")
+Rel(DataIngestion, LegacyDWH, "Выгружает агрегированные данные (без чувствительных)", "ETL")
+Rel(DataIngestion, CloudStorage, "Архивирует сырые данные", "S3")
+Rel(AIServices, DomainDataMarts, "Получает структурированные данные для моделей", "API/SQL")
+Rel(FinTechServices, DomainDataMarts, "Синхронизирует финансовые показатели", "API")
+Rel(ESB, LegacyDWH, "Поддерживает легаси-интеграции", "JMS/HTTP")
+Rel(PowerBuilderUI, LegacyDWH, "Операционные транзакции", "JDBC")
+Rel(PowerBI, LegacyDWH, "Формирует кастомизированные отчёты", "DirectQuery")
+Rel(SecurityLayer, DomainDataMarts, "Контролирует доступ и аудит", "IAM/Policy Engine")
+Rel(SecurityLayer, SelfServicePortal, "Аутентификация и авторизация", "OAuth2/SAML")
+
+@enduml
