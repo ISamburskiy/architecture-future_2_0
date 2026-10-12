@@ -19,18 +19,20 @@ Container_Boundary(LegacyEnv, "Легаси-контур (временное с�
   Container(ESB, "ESB", "Apache Camel", "Интеграционный слой, высокая нагрузка трансформаций")
   Container(PowerBI, "BI-система", "Power BI", "Кастомизированные отчёты, зависимость от DWH")
   Container(PowerBuilderUI, "Клиентский интерфейс", "PowerBuilder", "Операционный интерфейс клиник, тесно связан с DWH")
-  Container(AIServices, "ИИ-сервисы", "Python", "Обработка медицинских данных, требуют оперативных данных")
-  Container(FinTechServices, "Финтех-сервисы", "Golang/Java", "Финансовые операции, требуют актуальных данных")
-}
+  }
+
+Container(AIServices, "ИИ-сервисы", "Python", "Обработка медицинских данных, требуют оперативных данных")
+Container(FinTechServices, "Финтех-сервисы", "Golang/Java", "Финансовые операции, требуют актуальных данных")
+
 
 Rel(User, SelfServicePortal, "Формирует/просматривает отчёты")
 Rel(Admin, SelfServicePortal, "Настраивает права и витрины")
 Rel(SelfServicePortal, DomainDataMarts, "Запрашивает данные по срезам", "SQL/API")
-Rel(DomainDataMarts, DataIngestion, "Получает данные", "Cloud Pipelines")
-Rel(DataIngestion, LegacyDWH, "Выгружает агрегированные данные (без чувствительных)", "ETL")
+BiRel(DomainDataMarts, DataIngestion, "Получает данные", "Cloud Pipelines")
+BiRel(DataIngestion, LegacyDWH, "Выгружает агрегированные данные (без чувствительных)", "ETL")
 Rel(DataIngestion, CloudStorage, "Архивирует сырые данные", "S3")
-Rel(AIServices, DomainDataMarts, "Получает структурированные данные для моделей", "API/SQL")
-Rel(FinTechServices, DomainDataMarts, "Синхронизирует финансовые показатели", "API")
+Rel(AIServices, DataIngestion, "Получает структурированные данные для моделей", "API/SQL")
+Rel(FinTechServices, DataIngestion, "Синхронизирует финансовые показатели", "API")
 Rel(ESB, LegacyDWH, "Поддерживает легаси-интеграции", "JMS/HTTP")
 Rel(PowerBuilderUI, LegacyDWH, "Операционные транзакции", "JDBC")
 Rel(PowerBI, LegacyDWH, "Формирует кастомизированные отчёты", "DirectQuery")
